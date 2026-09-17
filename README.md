@@ -1,20 +1,22 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+🌍 GeoVision AI
 
-# Run and deploy your AI Studio app
+AI-Powered Satellite Image Analysis & Question Answering
 
-This contains everything you need to run your app locally.
+GeoVision AI is an intelligent application that analyzes satellite images using AI to identify vegetation, water bodies, built-up areas, and other land features. Users can upload an image and ask questions about the analyzed region, with AI providing relevant insights.
 
-View your app in AI Studio: https://ai.studio/apps/576f1dce-4d3c-4c7a-a0f6-1191d36f4091
+✨ Key Features
+🛰️ Satellite image upload
+🤖 AI-based image analysis
+🌱 Vegetation detection
+💧 Water-body identification
+🏙️ Built-up area analysis
+💬 AI-powered question answering
+📊 Visual analysis and insights
+🔄 Future support for change detection
+🛠️ Technologies
 
-## Run Locally
+Python • Streamlit • OpenCV • NumPy • AI/ML • Computer Vision
 
-**Prerequisites:**  Node.js
+🎯 Applications
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Environmental monitoring, agriculture, urban analysis, land-use monitoring, and disaster assessment.

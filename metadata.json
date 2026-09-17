@@ -1,0 +1,6 @@
+{
+  "name": "Satellite Photo Explorer",
+  "description": "Inspect solar system satellite imagery, identify celestial features, and ask questions to get precise definitions, scientific details, and mission insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

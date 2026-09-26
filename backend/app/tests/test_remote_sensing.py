@@ -26,6 +26,23 @@ def test_parse_image():
     assert meta["height"] == 128
     assert meta["bands"] == 3
 
+def test_parse_geotiff_with_tags():
+    from PIL.TiffImagePlugin import ImageFileDirectory_v2
+    img = Image.new("RGB", (64, 64), color=(30, 90, 150))
+    ifd = ImageFileDirectory_v2()
+    ifd[33550] = (10.0, 10.0, 0.0)
+    ifd[33922] = (0.0, 0.0, 0.0, 432100.0, 1421000.0, 0.0)
+    buf = io.BytesIO()
+    img.save(buf, format="TIFF", tiffinfo=ifd)
+    b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    arr, meta = parse_geotiff_or_image(b64, "cartosat_scene.tif")
+    assert meta["is_geotiff"] is True
+    assert meta["crs"] is not None
+    assert meta["bounds"] is not None
+    assert meta["bounds"][0] == 432100.0
+    assert meta["bounds"][2] == 432100.0 + (64 * 10.0)
+
 def test_modality_detection():
     # Optical RGB
     opt_arr = np.random.randint(0, 255, (64, 64, 3), dtype=np.uint8)

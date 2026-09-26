@@ -12,6 +12,10 @@ def analyze_imagery(request: AnalysisRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/query", response_model=AnalysisResponseSchema)
+def query_alias(request: AnalysisRequest):
+    return analyze_imagery(request)
+
 @router.post("/analyze/vqa", response_model=AnalysisResponseSchema)
 def analyze_vqa(request: AnalysisRequest):
     request.mode = "single"

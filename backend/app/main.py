@@ -53,3 +53,12 @@ def root():
         "docs": "/docs",
         "version": "1.0.0"
     }
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "service": "SatQuery AI Backend",
+        "version": "1.0.0"
+    }
+

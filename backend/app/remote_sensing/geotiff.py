@@ -60,15 +60,56 @@ def parse_geotiff_or_image(image_base64: str, filename: Optional[str] = None) ->
     except Exception as e:
         logger.debug(f"Rasterio parse skipped or failed ({e}); using PIL fallback.")
 
-    # Fallback: PIL standard decode
+    # Fallback: PIL standard decode with GeoTIFF tag parsing
     try:
-        pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        pil_img = Image.open(io.BytesIO(image_bytes))
+        is_tiff = pil_img.format in ("TIFF", "TIF") or (filename and (filename.lower().endswith(".tif") or filename.lower().endswith(".tiff")))
+        
+        if is_tiff and hasattr(pil_img, "tag_v2"):
+            tags = dict(pil_img.tag_v2)
+            metadata["is_geotiff"] = True
+            # Check for ModelPixelScaleTag (33550) and ModelTiepointTag (33922)
+            pixel_scale = tags.get(33550)
+            tie_points = tags.get(33922)
+            
+            if pixel_scale and tie_points and len(tie_points) >= 6:
+                # tie_points format: (I, J, K, X, Y, Z)
+                x0 = float(tie_points[3])
+                y0 = float(tie_points[4])
+                dx = float(pixel_scale[0])
+                dy = float(pixel_scale[1])
+                w = pil_img.width
+                h = pil_img.height
+                left = x0
+                top = y0
+                right = x0 + (w * dx)
+                bottom = y0 - (h * dy)
+                metadata["bounds"] = [round(left, 4), round(bottom, 4), round(right, 4), round(top, 4)]
+                
+                # Check coordinates to infer CRS if not explicitly tagged
+                if -180.0 <= left <= 180.0 and -90.0 <= bottom <= 90.0:
+                    metadata["crs"] = "EPSG:4326"
+                else:
+                    metadata["crs"] = "EPSG:32644" # Standard Cartosat UTM Zone 44N
+            
+            # Check for GeoAsciiParamsTag (34737)
+            ascii_params = tags.get(34737)
+            if ascii_params and isinstance(ascii_params, (str, bytes)):
+                ascii_str = ascii_params.decode("utf-8", errors="ignore") if isinstance(ascii_params, bytes) else ascii_params
+                if "WGS" in ascii_str or "UTM" in ascii_str:
+                    metadata["crs"] = ascii_str.strip().strip("|")
+
+        # Convert to numpy array
+        if pil_img.mode not in ("RGB", "L", "RGBA"):
+            pil_img = pil_img.convert("RGB")
+        
         arr = np.array(pil_img)
         metadata["width"] = pil_img.width
         metadata["height"] = pil_img.height
-        metadata["bands"] = 3
+        metadata["bands"] = arr.shape[2] if arr.ndim == 3 else 1
         metadata["dtype"] = str(arr.dtype)
-        metadata["is_geotiff"] = False
+        if not metadata["crs"] and metadata["is_geotiff"]:
+            metadata["crs"] = "EPSG:32644"
         return arr, metadata
     except Exception as err:
         logger.error(f"Failed to decode image payload: {err}")

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Download, ShieldCheck, Cpu, FileSpreadsheet, Loader2, Globe } from 'lucide-react';
+import { CheckCircle2, Download, ShieldCheck, Cpu, FileSpreadsheet, Loader2, Globe, Eye } from 'lucide-react';
 import { AnalysisResponse } from '../types';
 import { MetadataInspectorModal } from './MetadataInspectorModal';
+import { ReportPreviewModal } from './ReportPreviewModal';
 
 interface AnalysisResultCardProps {
   response: AnalysisResponse;
@@ -11,6 +12,7 @@ export const AnalysisResultCard: React.FC<AnalysisResultCardProps> = ({ response
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingJson, setIsExportingJson] = useState(false);
   const [isMetadataOpen, setIsMetadataOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleDownloadPdf = async () => {
     try {
@@ -127,9 +129,17 @@ export const AnalysisResultCard: React.FC<AnalysisResultCardProps> = ({ response
           </button>
 
           <button
+            onClick={() => setIsPreviewOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-cyan-800/60 transition-all"
+          >
+            <Eye className="w-3.5 h-3.5 text-cyan-400" />
+            Preview Formal Report
+          </button>
+
+          <button
             onClick={handleDownloadPdf}
             disabled={isExportingPdf}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-cyan-800/60 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white shadow-sm shadow-cyan-900/30 transition-all"
           >
             {isExportingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             Export PDF Report
@@ -153,6 +163,17 @@ export const AnalysisResultCard: React.FC<AnalysisResultCardProps> = ({ response
         onClose={() => setIsMetadataOpen(false)}
         metadata={response.metadata}
         filename={response.metadata?.filename}
+      />
+
+      {/* Formal Analysis Report Preview Modal */}
+      <ReportPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        response={response}
+        onDownloadPdf={handleDownloadPdf}
+        onDownloadJson={handleDownloadJson}
+        isExportingPdf={isExportingPdf}
+        isExportingJson={isExportingJson}
       />
 
     </div>

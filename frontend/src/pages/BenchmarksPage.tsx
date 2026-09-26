@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, CheckCircle2, ShieldCheck, Award, Layers, TrendingUp, Sparkles, Filter } from 'lucide-react';
+import { BarChart3, CheckCircle2, ShieldCheck, Award, Layers, TrendingUp, Sparkles, Filter, Play, Loader2, Compass, Globe } from 'lucide-react';
 import { BenchmarkResult } from '../types';
 import { fetchBenchmarkResults } from '../services/api';
 
@@ -7,6 +7,8 @@ export const BenchmarksPage: React.FC = () => {
   const [results, setResults] = useState<BenchmarkResult[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [isroTestMetrics, setIsroTestMetrics] = useState<any>(null);
+  const [isRunningIsroTest, setIsRunningIsroTest] = useState<boolean>(false);
 
   useEffect(() => {
     fetchBenchmarkResults()
@@ -191,6 +193,113 @@ export const BenchmarksPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+      </div>
+
+      {/* ISRO / SAC Evaluation Readiness Portal (Section 46) */}
+      <div className="glass-panel rounded-2xl p-6 border border-cyan-500/30 bg-slate-900/70 shadow-2xl space-y-4">
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-800">
+              <Compass className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold font-mono text-slate-100 uppercase tracking-wider">
+                  ISRO / SAC CO-REGISTERED BENCHMARK TEST SUITE
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase">
+                  Section 46 Readiness
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-mono">
+                Cartosat-2S (0.6m Optical) + RISAT-1A (C-Band SAR) Co-Registered Spatial Evaluation
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={async () => {
+              try {
+                setIsRunningIsroTest(true);
+                const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+                const res = await fetch(`${API_BASE}/evaluation/isro-run`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({}),
+                });
+                if (!res.ok) throw new Error('ISRO test run failed');
+                const data = await res.json();
+                setIsroTestMetrics(data);
+              } catch (err) {
+                console.error('ISRO test error:', err);
+              } finally {
+                setIsRunningIsroTest(false);
+              }
+            }}
+            disabled={isRunningIsroTest}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-cyan-600 via-teal-600 to-sky-500 hover:from-cyan-500 hover:to-sky-400 text-slate-950 shadow-md shadow-cyan-900/30 transition-all disabled:opacity-50"
+          >
+            {isRunningIsroTest ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                Executing Test Suite...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 fill-slate-950" />
+                Run Live ISRO Evaluation
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Live Metrics Display */}
+        {isroTestMetrics ? (
+          <div className="space-y-4 pt-1 font-mono text-xs animate-in fade-in duration-300">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-[10px] text-slate-500 block uppercase">SPATIAL NCC CORRELATION</span>
+                <span className="text-lg font-bold text-cyan-300">
+                  {isroTestMetrics.evaluation_metrics.spatial_ncc_correlation}
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Cross-modal spatial alignment</span>
+              </div>
+
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-[10px] text-slate-500 block uppercase">MASK INTERSECTION OVER UNION</span>
+                <span className="text-lg font-bold text-teal-300">
+                  {isroTestMetrics.evaluation_metrics.mask_iou}
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Pixel segmentation overlap</span>
+              </div>
+
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-[10px] text-slate-500 block uppercase">BOUNDING BOX MEAN IOU</span>
+                <span className="text-lg font-bold text-emerald-400">
+                  {isroTestMetrics.evaluation_metrics.bounding_box_mean_iou}
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Target localization accuracy</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center justify-between">
+              <div>
+                <span className="text-cyan-400 font-bold mr-2">Sensor Pair:</span>
+                <span>{isroTestMetrics.sample_pair_metadata.optical_sensor} & {isroTestMetrics.sample_pair_metadata.sar_sensor}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 mr-1">Projection:</span>
+                <span className="text-slate-200 font-bold">{isroTestMetrics.sample_pair_metadata.projection}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400 font-mono">
+            Click "Run Live ISRO Evaluation" to compute spatial correlation, bounding box overlap, and pixel mask IoU against the Cartosat-2S + RISAT-1A co-registered suite.
+          </p>
+        )}
 
       </div>
 

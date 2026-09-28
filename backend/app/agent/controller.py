@@ -54,28 +54,33 @@ class AgentController:
             metadata_list.append(meta)
             modalities.append(modality)
             
+            crs_info = meta.get("crs_display") or meta.get("crs") or "CRS unavailable"
             trace.add_step(
                 "MODALITY_DETECTED", 
-                f"Image [{idx+1}]: Modality={modality}, Dimensions={meta['width']}x{meta['height']}, CRS={meta.get('crs') or 'N/A'}"
+                f"Image [{idx+1}]: Modality={modality}, Dimensions={meta['width']}x{meta['height']}, CRS={crs_info}"
             )
 
         if len(parsed_arrays) >= 2:
             InputValidator.validate_dual_scenes(metadata_list[0], metadata_list[1], mode=request.mode)
 
-        # Step 4: Classify Task
-        task = TaskRouter.classify_task(
+        # Step 4: Classify Task using IntentClassifier
+        routing_decision = TaskRouter.route(
             query=request.query, 
             image_count=len(parsed_arrays), 
             modalities=modalities, 
             mode_hint=request.mode
         )
+        task = routing_decision.task
         trace.task = task
-        trace.add_step("TASK_CLASSIFIED", f"Routed request to specialist task pipeline: '{task.upper()}'")
+        trace.add_step(
+            "TASK_CLASSIFIED", 
+            f"Routed to '{task.upper()}' [{routing_decision.classifier_type}]. Reason: {routing_decision.reason}"
+        )
 
         # Step 5: Select Model Adapter from Registry
         model_adapter = model_registry.get_model(task)
         trace.add_model(model_adapter.model_name)
-        trace.add_step("MODEL_SELECTED", f"Selected specialist model adapter: '{model_adapter.model_name}'")
+        trace.add_step("MODEL_SELECTED", f"Selected adapter: '{model_adapter.model_name}' [{model_adapter.status}]")
 
         # Step 6: Create & Execute Plan
         plan = AgentPlanner.create_plan(task, modalities, metadata_list)
@@ -83,7 +88,14 @@ class AgentController:
         trace.add_step("PREPROCESSING_COMPLETE", f"Geospatial preprocessing complete. Steps: {', '.join(plan['preprocessing_steps'])}")
 
         # Step 7: Model Inference
-        result = model_adapter.predict(parsed_arrays, query=request.query, metadata=metadata_list[0])
+        inference_meta = metadata_list[0].copy()
+        if len(metadata_list) >= 2:
+            inference_meta["primary"] = metadata_list[0]
+            inference_meta["secondary"] = metadata_list[1]
+            inference_meta["optical"] = metadata_list[0]
+            inference_meta["sar"] = metadata_list[1]
+
+        result = model_adapter.predict(parsed_arrays, query=request.query, metadata=inference_meta)
         trace.add_step("MODEL_EXECUTED", f"Executed model '{model_adapter.model_name}' prediction successfully")
 
         # Add sub-models used if returned
@@ -119,6 +131,7 @@ class AgentController:
             confidence=result.get("confidence"),
             confidence_label=result.get("confidence_label", "Not available"),
             models=trace.models_selected,
+            implementation_status=result.get("implementation_status", "baseline"),
             evidence=evidence_objects,
             trace=trace.to_dict(),
             metadata=metadata_list[0],

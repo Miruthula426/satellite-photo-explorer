@@ -68,18 +68,18 @@
 
 ---
 
-## 🔬 3. Decoupled Specialist Model Registry
+## 🔬 3. Decoupled Specialist Model & Baseline Registry
 
-In strict adherence to **Rule 3**, SatQuery AI utilizes dedicated remote sensing adapters rather than relying on a single monolithic generic VLM:
+SatQuery AI utilizes dedicated task adapters and explicitly labeled baselines:
 
-| Specialist Adapter | Task Domain | Underlying Architecture | Primary Output |
+| Specialist Adapter / Baseline | Task Domain | Implementation Classification | Primary Output |
 | :--- | :--- | :--- | :--- |
-| **`SatQueryVQA-RSAdapter`** | Single-Image VQA | ViT + BigEarthNet-MM LoRA | Natural-language query answers grounded in overhead geometry |
-| **`SatCaptioner-ViT-RS`** | Terrain Captioning | ViT-B/16 Captioning Head | Topographical and land cover summaries |
-| **`SatGrounder-Segmenter`** | Visual Grounding | Spatial Segmentation Head | Pixel-level binary mask + bounding boxes `[xmin, ymin, xmax, ymax]` |
-| **`SatChangeDetector-BiTemporal`** | Temporal Change | Difference Network | Pixel difference mask + `changed_area_percent` statistics |
-| **`SatChangeVQA-RSNet`** | Change VQA | Multi-temporal RS-VQA Adapter | Natural-language reasoning grounded on the change mask |
-| **`SatFusionNet-OpticalSAR`** | Cross-Modal Fusion | Optical-SAR Fusion Network | Fused composite isolating specular water and corner reflectors |
+| **`GenericVLMOrchestrator`** | Single-Image VQA | Demo (Gemini 2.5 Flash / Local Spectral Baseline) | Natural-language query answers grounded in observable raster features |
+| **`ClassicalSpectralCaptionerBaseline`** | Terrain Captioning | Baseline (Procedural band statistics) | Factual topographical albedo summaries and CRS context |
+| **`ClassicalBaselineGrounder`** | Visual Grounding | Baseline (Spectral thresholding + contours) | Candidate region binary mask + bounding boxes `[xmin, ymin, xmax, ymax]` |
+| **`PixelDifferenceChangeBaseline`** | Temporal Change | Baseline (Spectral differencing + overlap check) | Pixel difference mask + `changed_area_percent` statistics |
+| **`EvidenceGroundedChangeVQA`** | Change VQA | Baseline (Evidence-grounded language synthesis) | Natural-language reasoning grounded strictly on difference metrics |
+| **`OpticalSARVisualizationBaseline`** | Cross-Modal Fusion | Baseline (Linear composite & backscatter slicing) | Fused dual-modality composite highlighting specular water and corner reflectors |
 
 ---
 
@@ -95,16 +95,19 @@ The SatQuery AI frontend includes a dedicated **1-Click Preset Bar** for instant
 
 ---
 
-## 📊 5. Benchmark Performance (Specialist vs Generic VLMs)
+## 📊 5. Benchmark Architecture & Evaluation Policy
 
-| Evaluation Dataset | Task Domain | Metric | Generic Baseline VLM | SatQuery AI Specialist | Absolute Gain |
-| :--- | :--- | :--- | :---: | :---: | :---: |
-| **RSVQA (Low Resolution)** | Overhead VQA | Overall Accuracy | 68.2% | **84.6%** | **+16.4%** |
-| **RSVQA (High Resolution)** | High-GSD Urban VQA | Overall Accuracy | 71.4% | **87.2%** | **+15.8%** |
-| **VRSBench** | Visual Grounding | Mean IoU (mIoU) | 41.8% | **62.4%** | **+20.6%** |
-| **CDVQA** | Bi-Temporal Change VQA | Overall Accuracy | 64.5% | **81.0%** | **+16.5%** |
-| **LEVIR-CD / WHU** | Change Detection | F1-Score | 67.3% | **79.2%** | **+11.9%** |
-| **ISRO CartoRISAT Suite** | Optical-SAR Fusion | Classification Acc | 74.0% | **88.1%** | **+14.1%** |
+SatQuery AI enforces a rigorous **zero-fabrication scientific evaluation policy**. Benchmark scores are never hardcoded or simulated. Results are populated solely from persisted evaluation runs on mounted physical dataset splits:
+
+| Evaluation Dataset | Task Domain | Target Metric | Adapter Implementation | Evaluation Readiness |
+| :--- | :--- | :--- | :--- | :--- |
+| **RSVQA (Low Resolution)** | Overhead VQA | Overall Accuracy | `RSVQADatasetAdapter` | Pipeline Ready (Pending Split Mount) |
+| **RSVQA (High Resolution)** | High-GSD Urban VQA | Overall Accuracy | `RSVQADatasetAdapter` | Pipeline Ready (Pending Split Mount) |
+| **VRSBench** | Visual Grounding | Mean IoU (mIoU) | `VRSBenchDatasetAdapter` | Pipeline Ready (Pending Split Mount) |
+| **CDVQA** | Bi-Temporal Change VQA | Overall Accuracy | `CDVQADatasetAdapter` | Pipeline Ready (Pending Split Mount) |
+| **BigEarthNet-MM** | Multi-Modal Optical + SAR | Mean Average Precision | `BigEarthNetAdapter` | Pipeline Ready (Pending Split Mount) |
+
+Local synthetic validation for arithmetic verification is available via `POST /api/v1/evaluation/synthetic-validation`.
 
 ---
 

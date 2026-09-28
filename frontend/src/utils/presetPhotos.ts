@@ -73,11 +73,11 @@ export const EARTH_OBSERVATION_PRESETS: PresetPhoto[] = [
   },
   {
     id: 'optical-sar-flood-fusion',
-    title: 'Disaster Inundation (Cartosat Optical + RISAT SAR)',
+    title: 'Disaster Inundation (Cartosat-Style Optical + RISAT-Style SAR Demonstration)',
     mode: 'optical_sar',
     modality: 'OPTICAL + SAR FUSION',
-    sensor: 'Cartosat-2S (0.6m) + RISAT-1A C-Band SAR',
-    description: 'Co-registered dual-modality scene combining cloud-free SAR microwave penetration with high-resolution optical imagery.',
+    sensor: 'Cartosat-Style Optical + RISAT-Style SAR Simulation',
+    description: 'Demonstration dual-modality scene combining cloud-penetrating synthetic SAR with optical demonstration imagery.',
     imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
     imageUrlSecondary: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=1200&q=80',
     sampleQueries: [
@@ -92,7 +92,7 @@ export const EARTH_OBSERVATION_PRESETS: PresetPhoto[] = [
       bands: 4,
       dtype: 'uint16',
       modality: 'SAR',
-      sensor: 'RISAT-1A + Cartosat-2S'
+      sensor: 'Synthetic Simulation (RISAT + Cartosat Style)'
     }
   }
 ];

@@ -52,14 +52,21 @@ class AnalysisResponseSchema(BaseModel):
     confidence: Optional[float] = None
     confidence_label: str
     models: List[str]
+    implementation_status: str = Field(default="baseline", description="Status: baseline, pretrained_model, demo, etc.")
     evidence: List[VisualEvidenceSchema]
     trace: ExecutionTraceSchema
     metadata: Dict[str, Any] = Field(default_factory=dict)
     execution_time_ms: float
     created_at: str
 
+class ModelHealthItem(BaseModel):
+    name: str
+    status: str  # baseline, loaded, unavailable, demo
+    task: Optional[str] = None
+
 class HealthResponseSchema(BaseModel):
     status: str
     version: str
-    models_loaded: List[str]
+    models_loaded: List[str] = Field(default_factory=list)
+    models: List[ModelHealthItem] = Field(default_factory=list)
     device: str

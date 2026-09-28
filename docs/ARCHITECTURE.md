@@ -32,13 +32,13 @@ SATQUERY AI
 
 The `AgentController` inspects query text, image count, and detected sensor modalities (`OPTICAL`, `SAR`, `MULTISPECTRAL`). Tasks are routed according to:
 
-| Query Intent Keywords | Input Count / Modalities | Classified Task | Specialist Model Adapter |
+| Query Intent Keywords | Input Count / Modalities | Classified Task | Specialist Model Adapter / Baseline |
 | :--- | :--- | :--- | :--- |
-| "describe", "caption", "summary" | 1 Image | `captioning` | `SatCaptioner-ViT-RS` |
-| "highlight", "detect", "water", "crop" | 1 Image | `grounding` | `SatGrounder-Segmenter` |
-| "land cover", "what is shown" | 1 Image | `vqa` | `SatQueryVQA-RSAdapter` |
-| "what changed", "increase", "decrease" | 2 Images (T1 & T2) | `change_vqa` | `SatChangeVQA-RSNet` + `SatChangeDetector` |
-| "optical and SAR", "fusion", "SAR" | 2 Images (Opt + SAR) | `optical_sar` | `SatFusionNet-OpticalSAR` |
+| "describe", "caption", "summary" | 1 Image | `captioning` | `ClassicalSpectralCaptionerBaseline` |
+| "highlight", "detect", "water", "crop" | 1 Image | `grounding` | `ClassicalBaselineGrounder` |
+| "land cover", "what is shown" | 1 Image | `vqa` | `GenericVLMOrchestrator` |
+| "what changed", "increase", "decrease" | 2 Images (T1 & T2) | `change_vqa` | `EvidenceGroundedChangeVQA` + `PixelDifferenceChangeBaseline` |
+| "optical and SAR", "fusion", "SAR" | 2 Images (Opt + SAR) | `optical_sar` | `OpticalSARVisualizationBaseline` |
 
 ---
 

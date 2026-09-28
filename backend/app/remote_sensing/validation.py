@@ -13,7 +13,7 @@ class InputValidator:
     """
     Geospatial Input Validation Layer.
     Validates file formats, MIME types, payload size, dimensions, CRS compatibility,
-    temporal compatibility, and dual-image spatial comparability.
+    spatial overlap, and dual-image comparability.
     """
 
     MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB limit
@@ -63,10 +63,10 @@ class InputValidator:
         meta_a: Dict[str, Any], 
         meta_b: Dict[str, Any], 
         mode: str = "bitemporal"
-    ) -> None:
+    ) -> Dict[str, Any]:
         """
         Validates spatial and temporal compatibility between two satellite scenes.
-        Returns useful error messages if images cannot be compared.
+        Examines CRS, bounds, resolution, and dimensions.
         """
         w_a, h_a = meta_a.get("width", 0), meta_a.get("height", 0)
         w_b, h_b = meta_b.get("width", 0), meta_b.get("height", 0)
@@ -74,21 +74,45 @@ class InputValidator:
         if w_a == 0 or h_a == 0 or w_b == 0 or h_b == 0:
             raise ValidationError("Unable to determine spatial dimensions of one or both scenes.")
 
-        # Check aspect ratio compatibility (must be within reasonable ratio to permit affine registration)
-        aspect_a = w_a / max(1, h_a)
-        aspect_b = w_b / max(1, h_b)
-        if abs(aspect_a - aspect_b) > 0.5:
-            logger.warning(f"Aspect ratios differ noticeably: Scene 1 ({aspect_a:.2f}) vs Scene 2 ({aspect_b:.2f}).")
-
-        # Check CRS compatibility if both GeoTIFFs specify a CRS
         crs_a = meta_a.get("crs")
         crs_b = meta_b.get("crs")
-        if crs_a and crs_b and crs_a != crs_b:
-            logger.warning(f"CRS mismatch detected: Primary is {crs_a}, Secondary is {crs_b}. Reprojection may be needed.")
+        bounds_a = meta_a.get("bounds")
+        bounds_b = meta_b.get("bounds")
 
-        # For Optical + SAR mode, verify at least one image exhibits SAR characteristics
-        if mode == "optical_sar":
-            mod_a = meta_a.get("modality", "OPTICAL")
-            mod_b = meta_b.get("modality", "SAR")
-            if mod_a == "OPTICAL" and mod_b == "OPTICAL":
-                logger.info("Both scenes identified as Optical; proceeding with cross-modal fusion under generic dual-channel mode.")
+        validation_report = {
+            "valid": True,
+            "crs_compatible": True,
+            "overlap_detected": True,
+            "warnings": []
+        }
+
+        # CRS validation
+        if crs_a and crs_b and crs_a != crs_b:
+            validation_report["crs_compatible"] = False
+            msg = f"CRS mismatch: Primary scene is {crs_a}, Secondary scene is {crs_b}. Different UTM projections cannot be treated as aligned."
+            validation_report["warnings"].append(msg)
+            logger.warning(msg)
+
+        # Spatial overlap check if both have bounds
+        if bounds_a and bounds_b:
+            left = max(bounds_a[0], bounds_b[0])
+            bottom = max(bounds_a[1], bounds_b[1])
+            right = min(bounds_a[2], bounds_b[2])
+            top = min(bounds_a[3], bounds_b[3])
+            if right <= left or top <= bottom:
+                validation_report["overlap_detected"] = False
+                msg = f"Zero spatial geographic overlap between scenes: bounds_a={bounds_a}, bounds_b={bounds_b}."
+                validation_report["warnings"].append(msg)
+                logger.warning(msg)
+
+        # Resolution check
+        res_a = meta_a.get("resolution")
+        res_b = meta_b.get("resolution")
+        if res_a and res_b:
+            res_ratio = max(res_a[0], res_b[0]) / max(1e-6, min(res_a[0], res_b[0]))
+            if res_ratio > 10.0:
+                validation_report["warnings"].append(
+                    f"Large resolution disparity ({res_ratio:.1f}x) between scenes ({res_a} vs {res_b})."
+                )
+
+        return validation_report

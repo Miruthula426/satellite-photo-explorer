@@ -44,7 +44,7 @@ The top preset bar in the SatQuery AI workspace contains **1-click loaders** for
 - **Action:** Click **"2. Grounding (Water)"**, then click **"Analyze Imagery"**.
 - **What Evaluators Should Observe:**
   1. **Query Text:** *"Locate, highlight, and segment the primary river channel and inland water bodies."*
-  2. **Specialist Model Selected:** `SatGrounder-Segmenter`.
+  2. **Specialist Model Selected:** `ClassicalBaselineGrounder`.
   3. **Visual Evidence Viewer:**
      - **Grounded Overlay:** Shows precise red bounding boxes framing the detected river corridor.
      - **Segmentation Mask:** Toggle the mask tab to view the binary pixel mask with exact computed area statistics:

@@ -161,7 +161,7 @@ export const AnalysisResultCard: React.FC<AnalysisResultCardProps> = ({ response
       <MetadataInspectorModal
         isOpen={isMetadataOpen}
         onClose={() => setIsMetadataOpen(false)}
-        metadata={response.metadata}
+        metadata={(response.metadata as any) || null}
         filename={response.metadata?.filename}
       />
 

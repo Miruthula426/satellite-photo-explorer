@@ -27,12 +27,12 @@ Unlike generic vision-language wrappers that treat satellite imagery like ordina
 | Requirement Category | ISRO Specification | SatQuery AI Implementation |
 | :--- | :--- | :--- |
 | **Interactive Querying** | Natural language text query interface for satellite imagery | Intelligent prompt analysis with automated task classification and context routing |
-| **Single-Image Analysis** | Land-cover VQA, descriptive captioning, and visual grounding | `SatQueryVQA-RSAdapter`, `SatCaptioner-ViT-RS`, and `SatGrounder-Segmenter` |
-| **Multitemporal Imagery** | Bi-temporal change detection and natural-language change VQA | `SatChangeDetector-BiTemporal` (pixel change mask & stats) + `SatChangeVQA-RSNet` |
-| **Cross-Modal Sensor Fusion** | Optical + SAR joint analysis and complementary feature fusion | `SatFusionNet-OpticalSAR` (HSV/intensity fusion, water specular & urban scatter isolation) |
+| **Single-Image Analysis** | Land-cover VQA, descriptive captioning, and visual grounding | `GenericVLMOrchestrator`, `ClassicalSpectralCaptionerBaseline`, and `ClassicalBaselineGrounder` |
+| **Multitemporal Imagery** | Bi-temporal change detection and natural-language change VQA | `PixelDifferenceChangeBaseline` (pixel difference mask & stats) + `EvidenceGroundedChangeVQA` |
+| **Cross-Modal Sensor Fusion** | Optical + SAR joint analysis and complementary feature fusion | `OpticalSARVisualizationBaseline` (dual-modality linear blend, water specular & urban scatter isolation) |
 | **Observable Reasoning** | Transparent AI decision trace and intermediate steps | Real-time `ExecutionTraceTracker` detailing task routing, model loading, and step latencies |
 | **Visual Evidence** | Grounding boxes, masks, change overlays, and spectral indices | Multi-layer `EvidenceViewer` with pan/zoom, opacity sliders, and spectral composite toggles |
-| **Benchmark Evaluation** | Validation against standard remote sensing benchmarks | RSVQA, VRSBench, CDVQA, and Cartosat-2S + RISAT-1A Co-Registered Suite with live IoU/NCC |
+| **Benchmark Evaluation** | Validation against standard remote sensing benchmarks | Zero-fabrication benchmark policy with adapters for RSVQA, VRSBench, CDVQA, and local synthetic validation |
 | **Reporting & Export** | Turnkey dissemination of mission results | Formal PDF reports (ReportLab compiled) and structured JSON exports |
 
 ---
@@ -80,36 +80,34 @@ Unlike generic vision-language wrappers that treat satellite imagery like ordina
 
 ---
 
-## 🔬 4. Specialist Model Registry
+## 🔬 4. Specialist Model & Baseline Registry
 
-SatQuery AI explicitly avoids single monolithic generic VLMs in compliance with **Absolute Engineering Rule 3**:
+SatQuery AI explicitly distinguishes domain-adapted models from classical heuristics and API orchestrators:
 
-1. **`SatQueryVQA-RSAdapter`**: Specialist remote-sensing VQA model adapted on BigEarthNet-MM and RSVQA. Parses overhead spatial relations and spectral characteristics.
-2. **`SatCaptioner-ViT-RS`**: Vision Transformer-based dense captioner for geographic topography, infrastructure density, and environmental classification.
-3. **`SatGrounder-Segmenter`**: Pixel-level segmentation and bounding-box grounding engine extracting discrete spatial geometries for target entities (water bodies, vegetation zones, urban clusters).
-4. **`SatChangeDetector-BiTemporal`**: Pixel-level spectral difference analyzer computing changed surface area percentage, spatial centroid clusters, and binary change masks between date T1 and T2.
-5. **`SatChangeVQA-RSNet`**: Bi-temporal reasoning network answering targeted temporal change questions grounded directly on the computed difference mask.
-6. **`SatFusionNet-OpticalSAR`**: Cross-modal fusion engine combining Optical spectral reflectance (hue/saturation) with SAR microwave backscatter intensity ($\sigma^0$ amplitude) to pierce cloud cover and isolate specular water and corner-reflector structures.
+1. **`GenericVLMOrchestrator`**: Single-image visual question answering combining foundation VLM prompt engineering with local spectral baseline fallback.
+2. **`ClassicalSpectralCaptionerBaseline`**: Procedural spectral captioning analyzing band albedo, dynamic range, and CRS projection.
+3. **`ClassicalBaselineGrounder`**: Classical thresholding and morphological connected component analysis for spatial candidate localization.
+4. **`PixelDifferenceChangeBaseline`**: Pixel-level grayscale difference analyzer computing changed surface area percentage and binary change masks with spatial overlap checking.
+5. **`EvidenceGroundedChangeVQA`**: Bi-temporal reasoning synthesis grounded strictly on empirical difference metrics.
+6. **`OpticalSARVisualizationBaseline`**: Dual-modality linear blend and empirical backscatter thresholding highlighting specular water and corner-reflector structures.
 
 ---
 
-## 📊 5. Empirical Benchmark Results
+## 📊 5. Empirical Benchmark Framework & Policy
 
-### Benchmark Comparison: Specialist Adapters vs Generic Baseline VLMs
+### Zero-Fabrication Evaluation Policy
 
-| Evaluation Dataset | Task Domain | Metric | Generic Baseline VLM | SatQuery AI Specialist | Absolute Gain |
-| :--- | :--- | :--- | :---: | :---: | :---: |
-| **RSVQA (Low Resolution)** | Overhead VQA | Overall Accuracy | 68.2% | **84.6%** | **+16.4%** |
-| **RSVQA (High Resolution)** | High-GSD Urban VQA | Overall Accuracy | 71.4% | **87.2%** | **+15.8%** |
-| **VRSBench** | Visual Grounding | Mean IoU (mIoU) | 41.8% | **62.4%** | **+20.6%** |
-| **CDVQA** | Bi-Temporal Change VQA | Overall Accuracy | 64.5% | **81.0%** | **+16.5%** |
-| **LEVIR-CD / WHU** | Change Detection | F1-Score | 67.3% | **79.2%** | **+11.9%** |
-| **ISRO CartoRISAT Suite** | Optical-SAR Fusion | Classification Acc | 74.0% | **88.1%** | **+14.1%** |
+| Evaluation Dataset | Task Domain | Target Metric | Adapter Implementation | Evaluation Readiness |
+| :--- | :--- | :--- | :--- | :--- |
+| **RSVQA (Low Resolution)** | Overhead VQA | Overall Accuracy | `RSVQADatasetAdapter` | Pipeline Ready (Pending Split Mount) |
+| **RSVQA (High Resolution)** | High-GSD Urban VQA | Overall Accuracy | `RSVQADatasetAdapter` | Pipeline Ready (Pending Split Mount) |
+| **VRSBench** | Visual Grounding | Mean IoU (mIoU) | `VRSBenchDatasetAdapter` | Pipeline Ready (Pending Split Mount) |
+| **CDVQA** | Bi-Temporal Change VQA | Overall Accuracy | `CDVQADatasetAdapter` | Pipeline Ready (Pending Split Mount) |
+| **BigEarthNet-MM** | Multi-Modal Optical + SAR | Mean Average Precision | `BigEarthNetAdapter` | Pipeline Ready (Pending Split Mount) |
 
-### Live Ingested Evaluation (Cartosat-2S + RISAT-1A)
-- **Mask Intersection over Union (IoU):** `0.7656`
-- **Bounding Box Mean IoU:** `0.8240`
-- **Optical-SAR Spatial Correlation (NCC):** Calibrated empirical cross-correlation computed per evaluation pair.
+### Local Pipeline Validation Arithmetic
+- **Spatial Metric Computation:** Real pixel IoU, bounding box IoU, and normalized cross-correlation (NCC) routines verified by automated test suites.
+- **Evaluation Status:** Local synthetic validation operational via `POST /api/v1/evaluation/synthetic-validation`. Official ISRO scores will populate upon mounting official evaluation rasters.
 
 ---
 

@@ -38,12 +38,14 @@ from app.api.routes_models import router as models_router
 from app.api.routes_analysis import router as analysis_router
 from app.api.routes_evaluation import router as evaluation_router
 from app.api.routes_reports import router as reports_router
+from app.api.routes_chat import router as chat_router
 
 app.include_router(health_router, prefix="/api/v1", tags=["Health"])
 app.include_router(models_router, prefix="/api/v1", tags=["Models"])
 app.include_router(analysis_router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(evaluation_router, prefix="/api/v1", tags=["Evaluation"])
 app.include_router(reports_router, prefix="/api/v1", tags=["Reports"])
+app.include_router(chat_router, prefix="/api/v1", tags=["Chat"])
 
 @app.get("/")
 def root():

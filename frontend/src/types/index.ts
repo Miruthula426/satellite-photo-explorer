@@ -57,17 +57,41 @@ export interface ExecutionTrace {
   execution_time_ms: number;
 }
 
+export interface ConfidenceBreakdown {
+  model_confidence?: number | null;
+  evidence_confidence?: number | null;
+  system_confidence?: number | null;
+  evidence_quality?: Record<string, any>;
+}
+
+export interface ConflictInfo {
+  conflict_detected: boolean;
+  conflict_type?: string | null;
+  conflict_details?: string | null;
+  reanalysis_performed: boolean;
+  reanalysis_tool?: string | null;
+}
+
 export interface AnalysisResponse {
   id: string;
   task: TaskType;
   mode: AnalysisMode;
+  query?: string;
   answer: string;
   confidence: number | null;
   confidence_label: string; // e.g. "Calibrated 92%" or "Not available"
   models: string[];
+  implementation_status?: string;
+  primary_model?: string;
+  actual_model_used?: string;
+  fallback_used?: boolean;
+  model_status?: string;
+  model_provenance?: Record<string, any>;
   evidence: VisualEvidence[];
   trace: ExecutionTrace;
   metadata?: Record<string, any>;
+  confidence_breakdown?: ConfidenceBreakdown;
+  conflict_info?: ConflictInfo;
   execution_time_ms: number;
   created_at: string;
 }
@@ -92,4 +116,42 @@ export interface BenchmarkResult {
   metric: string;
   score: string;
   date: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  status?: 'success' | 'unavailable' | 'error' | 'generating';
+  model?: string;
+  provider?: string;
+  error?: string | null;
+}
+
+export interface ChatRequestPayload {
+  message: string;
+  conversation_id?: string;
+  history?: { role: 'system' | 'user' | 'assistant'; content: string }[];
+  evidence?: Record<string, any> | any[] | null;
+  model?: string;
+  temperature?: number;
+  max_tokens?: number;
+}
+
+export interface ChatResponsePayload {
+  response: string;
+  model: string;
+  provider: string;
+  status: 'success' | 'unavailable' | 'error';
+  conversation_id?: string;
+  error?: string | null;
+}
+
+export interface ChatHealthResponse {
+  status: 'online' | 'offline';
+  available: boolean;
+  provider: string;
+  base_url: string;
+  configured_model: string;
 }

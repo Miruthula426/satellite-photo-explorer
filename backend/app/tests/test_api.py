@@ -7,7 +7,6 @@ from PIL import Image
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-
 from app.main import app
 
 client = TestClient(app)
@@ -26,13 +25,16 @@ def test_health_endpoint():
     data = response.json()
     assert data["status"] == "ok"
     assert "device" in data
+    assert "models" in data
+    for m in data["models"]:
+        assert m["status"] in ("baseline", "loaded", "unavailable", "demo")
 
 def test_models_endpoint():
     response = client.get("/api/v1/models")
     assert response.status_code == 200
     data = response.json()
-    assert "registered_models" in data
-    assert "vqa" in data["registered_models"]
+    assert "models" in data
+    assert len(data["models"]) >= 6
 
 def test_single_image_vqa():
     img_b64 = create_dummy_base64_image()
@@ -47,6 +49,7 @@ def test_single_image_vqa():
     assert data["task"] in ["vqa", "captioning"]
     assert "answer" in data
     assert "trace" in data
+    assert data["implementation_status"] in ("baseline", "demo", "production_model")
 
 def test_bitemporal_change_detection():
     img_a = create_dummy_base64_image(color=(50, 100, 150))
@@ -69,5 +72,5 @@ def test_evaluation_endpoint():
     response = client.get("/api/v1/evaluation")
     assert response.status_code == 200
     data = response.json()
-    assert "results" in data
-    assert len(data["results"]) >= 4
+    assert "status" in data
+    assert data["status"] in ("not_evaluated", "completed")

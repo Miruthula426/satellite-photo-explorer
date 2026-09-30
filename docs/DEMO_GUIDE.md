@@ -29,42 +29,57 @@ The top preset bar in the SatQuery AI workspace contains **1-click loaders** for
 
 ---
 
-### Demo 1: Single-Image Land Cover VQA
+### Demo 1: Single-Image Land Cover VQA (Phase 2A Real VLM Architecture)
 - **Action:** Click **"1. Single VQA (Crops)"** on the top preset bar, then click **"Analyze Imagery"**.
 - **What Evaluators Should Observe:**
   1. **Query Text:** *"What is the predominant land cover in this agricultural sector and what are its condition indicators?"*
-  2. **Specialist Model Selected:** `SatQueryVQA-RSAdapter` is invoked (observable in the **Execution Trace**).
-  3. **Natural-Language Output:** Professional remote sensing assessment detailing crop canopy reflectance and parcel layout.
-  4. **Confidence Badge:** Displays *"Not available (uncalibrated VLM output)"* (demonstrating strict adherence to Rule 2; no fake percentage).
-  5. **Geospatial Telemetry:** Click **"Inspect Raster Metadata"** to see UTM Zone 44N projection, 256×256 dimensions, 3 bands, and uint8 radiometric range.
+  2. **Model Selection & Provenance Banner:**
+     - **Primary Model Selected:** `Florence-2-base` (`microsoft/Florence-2-base`, MIT License).
+     - **Actual Model Used:** `SpectralStatisticsBaseline` (or `Florence-2-base` when physical weights are locally present, or Google Gemini if hosted API key configured).
+     - **Fallback Status:** Explicitly indicated with a clear status badge (e.g., `FALLBACK ACTIVE (spectral_baseline)` or `REAL VLM ACTIVE`). No simulated success is ever reported.
+  3. **Natural-Language Output:** Scientific remote sensing assessment detailing crop canopy reflectance, band means, and spatial layout.
+  4. **Confidence Field:** Explicitly `null` / *"Confidence: null (uncalibrated VLM output)"* (strict adherence to zero-fabrication; no invented probabilities).
+  5. **Remote-Sensing Honesty:** Model declares `remote_sensing_adapted = false` and `adaptation_status = "pretrained_general_vlm"` since Florence-2-base is a general vision foundation model.
+  6. **Geospatial & Preprocessing Telemetry:** Click **"Inspect Raster Metadata"** to view CRS (`EPSG:32644` UTM Zone 44N), 256×256 dimensions, 3 bands, radiometric normalization, and execution trace with millisecond timestamps.
 
 ---
 
-### Demo 2: Single-Image Visual Grounding & Segmentation
+### Demo 2: Single-Image Visual Grounding & Localization (Phase 2C: `google/owlvit-base-patch32`)
 - **Action:** Click **"2. Grounding (Water)"**, then click **"Analyze Imagery"**.
 - **What Evaluators Should Observe:**
   1. **Query Text:** *"Locate, highlight, and segment the primary river channel and inland water bodies."*
-  2. **Specialist Model Selected:** `SatGrounder-Segmenter`.
+  2. **Model Selection & Provenance Banner:**
+     - **Primary Model Selected:** `google/owlvit-base-patch32` (OWL-ViT Open-Vocabulary Detector, Apache 2.0).
+     - **Actual Model Used:** `ClassicalBaselineGrounder` (or `google/owlvit-base-patch32` when physical weights are locally present).
+     - **Fallback Status Banner:** When local weights are unmounted, clearly displays `"Neural grounding model unavailable — deterministic baseline used."` with amber fallback badge.
+     - **Domain Adaptation Status:** Declared as `pretrained_general_grounding` with zero false claims of remote-sensing fine-tuning.
   3. **Visual Evidence Viewer:**
-     - **Grounded Overlay:** Shows precise red bounding boxes framing the detected river corridor.
-     - **Segmentation Mask:** Toggle the mask tab to view the binary pixel mask with exact computed area statistics:
+     - **Grounded Overlay (`ev_grounding_overlay`):** Shows bounding boxes framing the detected target regions with spatial coordinates `[xmin, ymin, xmax, ymax]`.
+     - **Segmentation Mask (`ev_grounding_mask`):** Toggle the mask tab to view candidate pixel segmentation with computed area statistics:
        - `grounded_pixels`: e.g., 2,840 px
        - `grounded_area_percent`: e.g., 4.33% of total scene.
-  4. **Interactive Controls:** Adjust the opacity slider (0% to 100%) or toggle fullscreen pan/zoom.
+  4. **Observable Execution Trace:**
+     - Trace steps log: `QUERY_RECEIVED` $\rightarrow$ `TASK_CLASSIFIED (grounding)` $\rightarrow$ `INPUT_VALIDATION` $\rightarrow$ `MODEL_SELECTED (google/owlvit-base-patch32)` $\rightarrow$ `FALLBACK_TRIGGERED (ClassicalBaselineGrounder)` (or `GROUNDING_INFERENCE`) $\rightarrow$ `BOUNDING_BOXES_GENERATED` $\rightarrow$ `EVIDENCE_GENERATED`.
+  5. **Interactive Controls:** Adjust the opacity slider (0% to 100%) or toggle fullscreen pan/zoom.
 
 ---
 
-### Demo 3: Bi-Temporal Change Detection & Inundation Mapping
+### Demo 3: Bi-Temporal Change Detection & Inundation Mapping (Phase 2B BIT-CD)
 - **Action:** Click **"3. Change Detection (Flood)"**, then click **"Analyze Imagery"**.
 - **What Evaluators Should Observe:**
-  1. **Input Scenes:** Dual-scene ingestion displays **Date T1 (Pre-Monsoon)** alongside **Date T2 (Post-Monsoon Inundation)**.
-  2. **Specialist Model Selected:** `SatChangeDetector-BiTemporal`.
+  1. **Input Scenes:** Dual-scene ingestion displays **Date T1 (Pre-Monsoon)** alongside **Date T2 (Post-Monsoon Inundation)** with EPSG:32644 spatial telemetry.
+  2. **Model Selection & Provenance Banner:**
+     - **Primary Model Selected:** `BIT-CD` (Bitemporal Image Transformer, MIT License).
+     - **Actual Model Used:** `PixelDifferenceChangeBaseline` (or `BIT-CD` when physical checkpoint is mounted).
+     - **Fallback Status Banner:** When weights are not mounted, clearly renders `Neural change model unavailable — deterministic baseline used` with an amber warning badge.
   3. **Visual Evidence:**
-     - **Difference Change Map:** High-contrast cyan/magenta pixel difference mask isolating flooded riparian zones.
-     - **Side-by-Side Comparison:** Interactive split-screen comparison allowing direct swipe between pre- and post-flood rasters.
-     - **Quantitative Statistics:** Real surface modification metrics:
-       - `changed_area_percent`: e.g., `18.75%`
-       - `total_pixels_changed`: e.g., 12,288 px.
+     - **Change Map:** High-contrast binary difference magnitude mask isolating flooded riparian zones.
+     - **Spatial Overlay:** Secondary scene overlaid with detected change clusters and spatial bounding boxes.
+     - **Quantitative Statistics:**
+       - `changed_area_percent`: e.g., `21.88%`
+       - `changed_pixel_count`: computed directly from pixel mask.
+  4. **Observable Execution Trace:**
+     Trace steps log: `QUERY_RECEIVED` $\rightarrow$ `TASK_CLASSIFIED` $\rightarrow$ `PLAN_FORMULATED` $\rightarrow$ `MODEL_SELECTED` $\rightarrow$ `FALLBACK_TRIGGERED` (or `CHANGE_INFERENCE`) $\rightarrow$ `CHANGE_MAP_GENERATED` $\rightarrow$ `EVIDENCE_GENERATED`.
 
 ---
 

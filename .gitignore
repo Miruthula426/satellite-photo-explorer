@@ -20,3 +20,11 @@ __pycache__/
 # OS Artifacts
 .DS_Store
 Thumbs.db
+
+# Model Checkpoints & Large Binary Weights
+models/weights/
+*.pth
+*.pt
+*.bin
+*.safetensors
+*.ckpt

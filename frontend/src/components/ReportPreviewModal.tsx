@@ -93,7 +93,7 @@ export const ReportPreviewModal: React.FC<ReportPreviewModalProps> = ({
             </div>
             <div>
               <span className="text-[10px] text-slate-500 block uppercase">CRS PROJECTION</span>
-              <span className="text-teal-300 font-bold">{meta.crs || 'EPSG:32644 (UTM 44N)'}</span>
+              <span className="text-teal-300 font-bold">{meta.crs || 'CRS unavailable'}</span>
             </div>
             <div>
               <span className="text-[10px] text-slate-500 block uppercase">CONFIDENCE CALIBRATION</span>

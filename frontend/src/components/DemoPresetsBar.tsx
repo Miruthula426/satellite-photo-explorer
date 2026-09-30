@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Layers, ArrowRight, Eye, Split, Cpu } from 'lucide-react';
+import { Sparkles, Layers, ArrowRight, Eye, Split, Cpu, AlertTriangle } from 'lucide-react';
 import { AnalysisMode } from '../types';
 import { UploadedFileState } from './ImageUploader';
 import { generateSyntheticSatelliteScene } from '../utils/demoData';
@@ -16,20 +16,20 @@ export const DemoPresetsBar: React.FC<DemoPresetsBarProps> = ({ onLoadDemo }) =>
   const demos = [
     {
       id: 'demo1',
-      title: 'Demo 1: Single Image VQA',
-      subtitle: 'Land cover & terrain classification',
+      title: 'Demo 1: Single-Image VQA',
+      subtitle: 'Multimodal terrain question answering',
       mode: 'single' as AnalysisMode,
-      query: 'What type of land cover dominates this image?',
+      query: 'What type of surface feature dominates this scene?',
       badge: 'VQA',
       load: () => {
         const img = generateSyntheticSatelliteScene('agricultural');
         return {
           mode: 'single' as AnalysisMode,
-          query: 'What type of land cover dominates this image?',
+          query: 'What type of surface feature dominates this scene?',
           files: [
             {
               dataUrl: img,
-              filename: 'sentinel2_agricultural_canopy.tif',
+              filename: 'cartosat_optical_canopy.tif',
               role: 'primary' as const,
               isGeoTIFF: true
             }
@@ -39,20 +39,20 @@ export const DemoPresetsBar: React.FC<DemoPresetsBarProps> = ({ onLoadDemo }) =>
     },
     {
       id: 'demo2',
-      title: 'Demo 2: Visual Grounding',
-      subtitle: 'Pixel mask & bounding box localization',
+      title: 'Demo 2: Single-Image Captioning',
+      subtitle: 'Procedural spectral scene description',
       mode: 'single' as AnalysisMode,
-      query: 'Highlight the water body.',
-      badge: 'GROUNDING',
+      query: 'Describe this satellite image and summarize its land cover layout.',
+      badge: 'CAPTION',
       load: () => {
-        const img = generateSyntheticSatelliteScene('coastal');
+        const img = generateSyntheticSatelliteScene('optical');
         return {
           mode: 'single' as AnalysisMode,
-          query: 'Highlight the water body.',
+          query: 'Describe this satellite image and summarize its land cover layout.',
           files: [
             {
               dataUrl: img,
-              filename: 'sentinel2_river_delta.tif',
+              filename: 'cartosat_multispectral_scene.tif',
               role: 'primary' as const,
               isGeoTIFF: true
             }
@@ -62,34 +62,11 @@ export const DemoPresetsBar: React.FC<DemoPresetsBarProps> = ({ onLoadDemo }) =>
     },
     {
       id: 'demo3',
-      title: 'Demo 3: RS Captioning',
-      subtitle: 'Textbook-grade satellite scene description',
-      mode: 'single' as AnalysisMode,
-      query: 'Describe this satellite image.',
-      badge: 'CAPTION',
-      load: () => {
-        const img = generateSyntheticSatelliteScene('optical');
-        return {
-          mode: 'single' as AnalysisMode,
-          query: 'Describe this satellite image.',
-          files: [
-            {
-              dataUrl: img,
-              filename: 'landsat9_multispectral_scene.tif',
-              role: 'primary' as const,
-              isGeoTIFF: true
-            }
-          ]
-        };
-      }
-    },
-    {
-      id: 'demo4',
-      title: 'Demo 4: Bi-Temporal Change',
+      title: 'Demo 3: Bi-Temporal Change',
       subtitle: 'T1 vs T2 difference map & quantification',
       mode: 'bitemporal' as AnalysisMode,
       query: 'What changed between these two dates?',
-      badge: 'CHANGE VQA',
+      badge: 'CHANGE DETECT',
       load: () => {
         const t1 = generateSyntheticSatelliteScene('urban_t1');
         const t2 = generateSyntheticSatelliteScene('urban_t2');
@@ -99,13 +76,13 @@ export const DemoPresetsBar: React.FC<DemoPresetsBarProps> = ({ onLoadDemo }) =>
           files: [
             {
               dataUrl: t1,
-              filename: 'sentinel2_time_t1_earlier.tif',
+              filename: 'temporal_t1_pre_monsoon.tif',
               role: 'primary' as const,
               isGeoTIFF: true
             },
             {
               dataUrl: t2,
-              filename: 'sentinel2_time_t2_later.tif',
+              filename: 'temporal_t2_post_monsoon.tif',
               role: 'secondary' as const,
               isGeoTIFF: true
             }
@@ -114,29 +91,52 @@ export const DemoPresetsBar: React.FC<DemoPresetsBarProps> = ({ onLoadDemo }) =>
       }
     },
     {
-      id: 'demo5',
-      title: 'Demo 5: Optical + SAR Fusion',
-      subtitle: 'Cartosat Optical + RISAT SAR joint analysis',
+      id: 'demo4',
+      title: 'Demo 4: Optical + SAR Joint Analysis',
+      subtitle: 'Reflectance + C-Band SAR backscatter',
       mode: 'optical_sar' as AnalysisMode,
-      query: 'Use the optical and SAR images together to identify built-up and water-covered regions.',
+      query: 'Use optical reflectance and SAR backscatter to identify water and urban structures.',
       badge: 'OPTICAL+SAR',
       load: () => {
         const opt = generateSyntheticSatelliteScene('optical');
         const sar = generateSyntheticSatelliteScene('sar');
         return {
           mode: 'optical_sar' as AnalysisMode,
-          query: 'Use the optical and SAR images together to identify built-up and water-covered regions.',
+          query: 'Use optical reflectance and SAR backscatter to identify water and urban structures.',
           files: [
             {
               dataUrl: opt,
-              filename: 'cartosat2s_optical_0.6m.tif',
+              filename: 'cartosat_optical_bengaluru.tif',
               role: 'optical' as const,
               isGeoTIFF: true
             },
             {
               dataUrl: sar,
-              filename: 'risat1a_cband_sar.tif',
+              filename: 'risat_sar_mumbai.tif',
               role: 'sar' as const,
+              isGeoTIFF: true
+            }
+          ]
+        };
+      }
+    },
+    {
+      id: 'demo5',
+      title: 'Demo 5: Conflict & Reanalysis',
+      subtitle: 'Contradiction trigger & automated reanalysis',
+      mode: 'single' as AnalysisMode,
+      query: 'Locate and outline all urban building structures with bounding boxes.',
+      badge: 'REANALYSIS',
+      load: () => {
+        const img = generateSyntheticSatelliteScene('coastal');
+        return {
+          mode: 'single' as AnalysisMode,
+          query: 'Locate and outline all urban building structures with bounding boxes.',
+          files: [
+            {
+              dataUrl: img,
+              filename: 'coastal_estuary_test.tif',
+              role: 'primary' as const,
               isGeoTIFF: true
             }
           ]
@@ -155,13 +155,13 @@ export const DemoPresetsBar: React.FC<DemoPresetsBarProps> = ({ onLoadDemo }) =>
           </div>
           <div>
             <h3 className="text-xs font-mono font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
-              FIVE REQUIRED ISRO DEMONSTRATION WORKFLOWS
+              FIVE VERIFIED REPRODUCIBLE DEMONSTRATION WORKFLOWS
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-950 text-teal-300 border border-teal-800">
                 1-Click Load
               </span>
             </h3>
             <p className="text-[11px] text-slate-400">
-              Pre-configured remote sensing test scenarios with high-resolution rasters & specialized queries
+              Deterministic test scenarios covering single-image VQA, captioning, bi-temporal change, Optical+SAR joint analysis, and conflict reanalysis.
             </p>
           </div>
         </div>

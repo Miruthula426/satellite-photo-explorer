@@ -32,13 +32,97 @@ SATQUERY AI
 
 The `AgentController` inspects query text, image count, and detected sensor modalities (`OPTICAL`, `SAR`, `MULTISPECTRAL`). Tasks are routed according to:
 
-| Query Intent Keywords | Input Count / Modalities | Classified Task | Specialist Model Adapter |
+| Query Intent Keywords | Input Count / Modalities | Classified Task | Specialist Model Adapter / Baseline |
 | :--- | :--- | :--- | :--- |
-| "describe", "caption", "summary" | 1 Image | `captioning` | `SatCaptioner-ViT-RS` |
-| "highlight", "detect", "water", "crop" | 1 Image | `grounding` | `SatGrounder-Segmenter` |
-| "land cover", "what is shown" | 1 Image | `vqa` | `SatQueryVQA-RSAdapter` |
-| "what changed", "increase", "decrease" | 2 Images (T1 & T2) | `change_vqa` | `SatChangeVQA-RSNet` + `SatChangeDetector` |
-| "optical and SAR", "fusion", "SAR" | 2 Images (Opt + SAR) | `optical_sar` | `SatFusionNet-OpticalSAR` |
+| "describe", "caption", "summary" | 1 Image | `captioning` | `ClassicalSpectralCaptionerBaseline` |
+| "highlight", "detect", "water", "crop", "find", "locate", "where is", "where are", "show me", "pinpoint" | 1 Image | `grounding` | `GroundingProvider` (`google/owlvit-base-patch32` neural / `ClassicalBaselineGrounder` fallback) |
+| "land cover", "what is shown" | 1 Image | `vqa` | `GenericVLMOrchestrator` (`Florence-2-base` / Gemini / Spectral Baseline) |
+| "map", "detect change", "difference", "mask" | 2 Images (T1 & T2) | `change_detection` | `ChangeDetectionProvider` (`BIT-CD` neural / `PixelDifferenceChangeBaseline` fallback) |
+| "what changed", "increase", "decrease" | 2 Images (T1 & T2) | `change_vqa` | `EvidenceGroundedChangeVQA` + `PixelDifferenceChangeBaseline` |
+| "optical and SAR", "fusion", "SAR" | 2 Images (Opt + SAR) | `optical_sar` | `OpticalSARVisualizationBaseline` |
+
+---
+
+## 2.1 Bi-Temporal Change Detection Architecture (Phase 2B)
+
+```
+       T1 GeoTIFF (Earlier)                  T2 GeoTIFF (Later)
+                │                                     │
+                ▼                                     ▼
+        GeoTIFF Parser                        GeoTIFF Parser
+  (CRS, Bounds, NaN Masking)            (CRS, Bounds, NaN Masking)
+                │                                     │
+                └──────────────┬──────────────────────┘
+                               ▼
+                   Spatial Compatibility Check
+             (CRS alignment, geographic overlap)
+                               │
+                               ▼
+                     Multiband Preprocessing
+             (Min-max normalization, ImageNet std)
+                               │
+                               ▼
+                SiameseRSChangeDetector (BIT-CD)
+          ┌────────────────────┴────────────────────┐
+          ▼ (Checkpoint Available)                  ▼ (Checkpoint Missing / Fallback)
+    BIT-CD Neural Pass                     PixelDifferenceChangeBaseline
+  (ResNet-18 + Transformer Decoder)        (Spectral difference thresholding)
+          │                                         │
+          └────────────────────┬────────────────────┘
+                               ▼
+                   Change Probability / Mask
+             (Thresholded binary map at p > 0.50)
+                               │
+                               ▼
+                   Spatial Evidence & Overlay
+             (4 Artifacts: T1, T2, Change Map, Overlay)
+                               │
+                               ▼
+                    Observable Execution Trace
+       (MODEL_SELECTED → CHANGE_INFERENCE/FALLBACK → EVIDENCE)
+```
+
+---
+
+## 2.2 Visual Grounding & Object Localization Architecture (Phase 2C)
+
+```
+                       User Natural-Language Query
+                   ("Find the water body", "Locate buildings")
+                                │
+                                ▼
+                       Target Phrase Extractor
+                  (Strips prompt prefixes, extracts target)
+                                │
+                                ▼
+                       Single Satellite Raster
+                       (GeoTIFF / PNG / JPEG)
+                                │
+                                ▼
+                      Multiband Preprocessor
+               (Dynamic range normalization, RGB composite)
+                                │
+                                ▼
+                       GroundingProvider
+         ┌──────────────────────┴──────────────────────┐
+         ▼ (Checkpoint Available)                      ▼ (Checkpoint Missing / Fallback)
+   OWL-ViT Neural Pass                       ClassicalBaselineGrounder
+ (Vision Transformer ViT-B/32                (Spectral thresholding &
+  + Text Projection & Box Heads)              contour component analysis)
+         │                                             │
+         └──────────────────────┬──────────────────────┘
+                                ▼
+                   Spatial Bounding Boxes
+                 [xmin, ymin, xmax, ymax]
+                                │
+                                ▼
+                    Evidence Generation Engine
+             (ev_grounding_overlay, ev_grounding_mask)
+                                │
+                                ▼
+                    Observable Execution Trace
+  (MODEL_SELECTED → GROUNDING_INFERENCE/FALLBACK → BOUNDING_BOXES_GENERATED)
+```
 
 ---
 

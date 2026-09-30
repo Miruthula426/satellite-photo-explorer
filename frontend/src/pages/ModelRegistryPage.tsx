@@ -1,51 +1,149 @@
-import React from 'react';
-import { Cpu, CheckCircle2, Layers, ShieldCheck, Zap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Cpu, CheckCircle2, Layers, ShieldCheck, Zap, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { fetchLoadedModels, ModelDetail } from '../services/api';
 
 export const ModelRegistryPage: React.FC = () => {
-  const models = [
-    {
-      name: 'SatQueryVQA-RSAdapter',
-      task: 'Single-Image VQA',
-      type: 'Vision-Language Adapter',
-      modality: 'OPTICAL / MULTISPECTRAL',
-      description: 'Specialist remote sensing VQA model trained to answer direct natural language queries regarding land cover, water bodies, and infrastructure.'
-    },
-    {
-      name: 'SatCaptioner-ViT-RS',
-      task: 'Remote Sensing Captioning',
-      type: 'ViT + Text Decoder Adapter',
-      modality: 'OPTICAL / MULTISPECTRAL',
-      description: 'Generates comprehensive textbook-grade scientific descriptions of satellite raster scenes including spatial scale and CRS context.'
-    },
-    {
-      name: 'SatGrounder-Segmenter',
-      task: 'Visual Grounding & Segmentation',
-      type: 'Segmenter & Bounding Box Extractor',
-      modality: 'OPTICAL / MULTISPECTRAL',
-      description: 'Localizes requested land cover targets (water, vegetation, built-up) and outputs pixel-level binary masks and bounding box overlays.'
-    },
-    {
-      name: 'SatChangeDetector-BiTemporal',
-      task: 'Bi-Temporal Change Detection',
-      type: 'Difference & Cluster Analyzer',
-      modality: 'BI-TEMPORAL OPTICAL / SAR',
-      description: 'Performs pixel-level spectral difference calculations, spatial alignment, change mask generation, and area percentage quantification.'
-    },
-    {
-      name: 'SatChangeVQA-RSNet',
-      task: 'Bi-Temporal Change VQA',
-      type: 'Change VQA Specialist',
-      modality: 'BI-TEMPORAL OPTICAL / SAR',
-      description: 'Combines ChangeDetector evidence with natural language reasoning to answer complex change queries ("What changed?", "Has built-up increased?").'
-    },
-    {
-      name: 'SatFusionNet-OpticalSAR',
-      task: 'Optical + SAR Joint Fusion',
-      type: 'Cross-Modal Fusion Adapter',
-      modality: 'OPTICAL + SAR DUAL MODALITY',
-      description: 'Fuses Optical spectral reflectance with SAR microwave backscatter intensity for cloud-penetrating water and urban structure extraction.'
+  const [models, setModels] = useState<ModelDetail[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    fetchLoadedModels()
+      .then((data) => {
+        if (data.models && data.models.length > 0) {
+          setModels(data.models);
+        } else {
+          // Truthful default manifest if offline
+          setModels([
+            {
+              name: 'GenericVLMOrchestrator',
+              task: 'Single-Image VQA',
+              implementation: 'GenericVLMSynthesisAdapter (Gemini 2.5 Flash / Local Spectral Baseline)',
+              version: '1.1.0',
+              model_source: 'google/gemini-2.5-flash + local heuristics',
+              license: 'Google Gemini API Terms',
+              modality: 'OPTICAL / MULTISPECTRAL',
+              input_requirements: 'Single satellite raster (1+ bands)',
+              device_requirements: 'CPU / Network API',
+              status: 'demo',
+              implementation_status: 'demo',
+              is_trained: false,
+              is_remote_sensing_adapted: false
+            },
+            {
+              name: 'ClassicalSpectralCaptionerBaseline',
+              task: 'Image Captioning',
+              implementation: 'ClassicalSpectralCaptioner (Band statistics and albedo dispersion)',
+              version: '1.1.0',
+              model_source: 'Local procedural spectral heuristics',
+              license: 'Apache-2.0',
+              modality: 'OPTICAL / MULTISPECTRAL',
+              input_requirements: 'Single satellite raster (1+ bands)',
+              device_requirements: 'CPU',
+              status: 'baseline',
+              implementation_status: 'baseline',
+              is_trained: false,
+              is_remote_sensing_adapted: false
+            },
+            {
+              name: 'ClassicalBaselineGrounder',
+              task: 'Visual Grounding',
+              implementation: 'ClassicalBaselineGrounder (Spectral thresholding + contours)',
+              version: '1.1.0',
+              model_source: 'OpenCV / SciPy connected components',
+              license: 'Apache-2.0',
+              modality: 'OPTICAL / MULTISPECTRAL',
+              input_requirements: 'Single satellite raster + target query string',
+              device_requirements: 'CPU',
+              status: 'baseline',
+              implementation_status: 'baseline',
+              is_trained: false,
+              is_remote_sensing_adapted: false
+            },
+            {
+              name: 'PixelDifferenceChangeBaseline',
+              task: 'Change Detection',
+              implementation: 'PixelDifferenceChangeBaseline (Spectral difference magnitude)',
+              version: '1.1.0',
+              model_source: 'NumPy / Rasterio co-registration baseline',
+              license: 'Apache-2.0',
+              modality: 'BI-TEMPORAL OPTICAL / SAR',
+              input_requirements: '2 co-registered or rescaled rasters (T1 & T2)',
+              device_requirements: 'CPU',
+              status: 'baseline',
+              implementation_status: 'baseline',
+              is_trained: false,
+              is_remote_sensing_adapted: false
+            },
+            {
+              name: 'EvidenceGroundedChangeVQA',
+              task: 'Change VQA',
+              implementation: 'EvidenceGroundedChangeVQA (Consumes difference evidence)',
+              version: '1.1.0',
+              model_source: 'Structured evidence synthesis pipeline',
+              license: 'Apache-2.0',
+              modality: 'BI-TEMPORAL OPTICAL / SAR',
+              input_requirements: '2 rasters (T1 & T2) + change query string',
+              device_requirements: 'CPU',
+              status: 'baseline',
+              implementation_status: 'baseline',
+              is_trained: false,
+              is_remote_sensing_adapted: false
+            },
+            {
+              name: 'OpticalSARVisualizationBaseline',
+              task: 'Optical+SAR Fusion',
+              implementation: 'OpticalSARVisualizationBaseline (Linear composite & backscatter slicing)',
+              version: '1.1.0',
+              model_source: 'Radiometric thresholding baseline',
+              license: 'Apache-2.0',
+              modality: 'OPTICAL + SAR DUAL MODALITY',
+              input_requirements: '2 rasters (Optical reflectance + SAR backscatter)',
+              device_requirements: 'CPU',
+              status: 'baseline',
+              implementation_status: 'baseline',
+              is_trained: false,
+              is_remote_sensing_adapted: false
+            }
+          ]);
+        }
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'loaded':
+      case 'available':
+        return (
+          <span className="inline-flex items-center gap-1 text-emerald-400 font-mono text-[11px] font-bold">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            AVAILABLE
+          </span>
+        );
+      case 'baseline':
+        return (
+          <span className="inline-flex items-center gap-1 text-cyan-400 font-mono text-[11px] font-bold">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            BASELINE
+          </span>
+        );
+      case 'demo':
+        return (
+          <span className="inline-flex items-center gap-1 text-amber-400 font-mono text-[11px] font-bold">
+            <Sparkles className="w-3.5 h-3.5" />
+            DEMO
+          </span>
+        );
+      case 'unavailable':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 text-slate-500 font-mono text-[11px] font-bold">
+            <AlertCircle className="w-3.5 h-3.5" />
+            UNAVAILABLE
+          </span>
+        );
     }
-  ];
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">
@@ -61,7 +159,7 @@ export const ModelRegistryPage: React.FC = () => {
               SATQUERY SPECIALIST MODEL REGISTRY
             </h2>
             <p className="text-xs text-slate-400">
-              Decoupled Model Adapters providing specialist inference for remote sensing tasks
+              Verified registry of remote sensing models, classical baselines, and API orchestrators. Status reflects authentic weight availability.
             </p>
           </div>
         </div>
@@ -82,18 +180,30 @@ export const ModelRegistryPage: React.FC = () => {
 
               <div>
                 <h3 className="text-sm font-bold font-mono text-slate-100">{m.name}</h3>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">{m.type}</p>
+                <p className="text-xs text-slate-400 font-mono mt-0.5">{m.implementation}</p>
               </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed font-sans">{m.description}</p>
+              <div className="space-y-1.5 pt-1 text-[11px] font-mono text-slate-400 border-t border-slate-800/60">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Source:</span>
+                  <span className="text-slate-300 truncate max-w-[180px]">{m.model_source}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">License:</span>
+                  <span className="text-slate-300">{m.license}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Trained RS Weights:</span>
+                  <span className={m.is_trained ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
+                    {m.is_trained ? 'YES' : 'NO (Heuristic / API)'}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-400">Status:</span>
-              <span className="inline-flex items-center gap-1 text-emerald-400">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Active / Lazy Loaded
-              </span>
+              <span className="text-slate-500 uppercase text-[10px]">Registry Status:</span>
+              {getStatusBadge(m.status)}
             </div>
 
           </div>

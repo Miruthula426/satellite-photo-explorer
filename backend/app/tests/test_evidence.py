@@ -16,9 +16,10 @@ def test_grounding_evidence_generation():
     img[20:60, 20:60] = 30  # Dark water feature
     res = grounder.predict([img], query="Highlight the water body.")
     assert "evidence" in res
-    assert len(res["evidence"]) == 2
-    assert res["evidence"][0]["type"] == "overlay"
-    assert res["evidence"][1]["type"] == "mask"
+    assert len(res["evidence"]) >= 2
+    types = [e["type"] for e in res["evidence"]]
+    assert "overlay" in types
+    assert "mask" in types
 
 def test_change_detection_evidence_generation():
     detector = ChangeDetector()

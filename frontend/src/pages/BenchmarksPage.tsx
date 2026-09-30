@@ -1,55 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, CheckCircle2, ShieldCheck, Award, Layers, TrendingUp, Sparkles, Filter, Play, Loader2, Compass, Globe } from 'lucide-react';
+import { BarChart3, ShieldAlert, Award, Layers, TrendingUp, Sparkles, Filter, Play, Loader2, Compass, AlertCircle, Info, Database } from 'lucide-react';
 import { BenchmarkResult } from '../types';
-import { fetchBenchmarkResults } from '../services/api';
+import { fetchBenchmarkResults, runSyntheticValidation, runOfficialEvaluation } from '../services/api';
 
 export const BenchmarksPage: React.FC = () => {
   const [results, setResults] = useState<BenchmarkResult[]>([]);
+  const [evalStatus, setEvalStatus] = useState<string>('not_evaluated');
+  const [evalMessage, setEvalMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [isroTestMetrics, setIsroTestMetrics] = useState<any>(null);
-  const [isRunningIsroTest, setIsRunningIsroTest] = useState<boolean>(false);
+  
+  // Synthetic Pipeline Validation state
+  const [syntheticMetrics, setSyntheticMetrics] = useState<any>(null);
+  const [isRunningSynthetic, setIsRunningSynthetic] = useState<boolean>(false);
+
+  // Official Evaluation state
+  const [officialStatus, setOfficialStatus] = useState<any>(null);
+  const [isRunningOfficial, setIsRunningOfficial] = useState<boolean>(false);
 
   useEffect(() => {
     fetchBenchmarkResults()
-      .then((data) => setResults(data))
+      .then((data) => {
+        setResults(data.results);
+        setEvalStatus(data.status);
+        setEvalMessage(data.message);
+      })
       .finally(() => setIsLoading(false));
   }, []);
-
-  const comparisons = [
-    {
-      task: 'Single-Image RS VQA',
-      dataset: 'RSVQA (Low Resolution)',
-      satqueryScore: '84.6%',
-      baselineScore: '61.2%',
-      delta: '+23.4%',
-      metric: 'Overall Accuracy'
-    },
-    {
-      task: 'Remote Sensing Grounding',
-      dataset: 'VRSBench',
-      satqueryScore: '62.4%',
-      baselineScore: '43.1%',
-      delta: '+19.3%',
-      metric: 'Mean IoU (mIoU)'
-    },
-    {
-      task: 'Bi-Temporal Change Analysis',
-      dataset: 'CDVQA',
-      satqueryScore: '79.2%',
-      baselineScore: '48.5%',
-      delta: '+30.7%',
-      metric: 'Change F1-Score'
-    },
-    {
-      task: 'Optical + SAR Fusion',
-      dataset: 'ISRO Cartosat + RISAT',
-      satqueryScore: '88.1%',
-      baselineScore: '69.4%',
-      delta: '+18.7%',
-      metric: 'Classification Accuracy'
-    }
-  ];
 
   const filteredResults = filterCategory === 'all'
     ? results
@@ -66,138 +43,106 @@ export const BenchmarksPage: React.FC = () => {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-100 uppercase tracking-wider font-mono">
-              REMOTE SENSING BENCHMARK DASHBOARD
+              VERIFIED REMOTE SENSING BENCHMARK DASHBOARD
             </h2>
             <p className="text-xs text-slate-400">
-              Evaluated performance metrics across standard benchmarks (RSVQA, VRSBench, CDVQA, ISRO CartoRISAT)
+              Evaluated performance metrics across mounted Earth observation benchmarks (RSVQA, VRSBench, CDVQA, BigEarthNet-MM)
             </p>
           </div>
         </div>
       </div>
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-panel p-4 rounded-xl border border-slate-800 bg-slate-900/50 space-y-1">
-          <span className="text-[11px] font-mono text-slate-400 uppercase">RSVQA Single-Image VQA</span>
-          <p className="text-2xl font-bold font-mono text-cyan-300">84.6%</p>
-          <p className="text-[10px] text-slate-500 font-mono">Overall Accuracy (Low Res)</p>
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl border border-slate-800 bg-slate-900/50 space-y-1">
-          <span className="text-[11px] font-mono text-slate-400 uppercase">VRSBench Visual Grounding</span>
-          <p className="text-2xl font-bold font-mono text-teal-300">62.4%</p>
-          <p className="text-[10px] text-slate-500 font-mono">Mean Intersection-over-Union (mIoU)</p>
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl border border-slate-800 bg-slate-900/50 space-y-1">
-          <span className="text-[11px] font-mono text-slate-400 uppercase">CDVQA Bi-Temporal Change</span>
-          <p className="text-2xl font-bold font-mono text-cyan-300">79.2%</p>
-          <p className="text-[10px] text-slate-500 font-mono">Change Detection F1-Score</p>
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl border border-slate-800 bg-slate-900/50 space-y-1">
-          <span className="text-[11px] font-mono text-slate-400 uppercase">ISRO Cartosat + RISAT</span>
-          <p className="text-2xl font-bold font-mono text-emerald-300">88.1%</p>
-          <p className="text-[10px] text-slate-500 font-mono">Optical + SAR Cross-Modal Fusion</p>
-        </div>
-      </div>
-
-      {/* Specialist Model vs Generic VLM Baseline Comparison Matrix */}
-      <div className="glass-panel rounded-2xl p-6 border border-slate-800 bg-slate-900/60 shadow-xl space-y-4">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-emerald-400" />
-          <h3 className="text-sm font-bold font-mono text-slate-200 uppercase tracking-wider">
-            SPECIALIST RS ADAPTERS VS. GENERIC VLM BASELINE (RULE 3 VALIDATION)
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {comparisons.map((c, idx) => (
-            <div key={idx} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-              <span className="text-[10px] font-mono text-slate-400 uppercase block">{c.task}</span>
-              <p className="text-xs font-bold text-slate-200">{c.dataset}</p>
-              
-              <div className="flex items-center justify-between text-xs font-mono pt-1">
-                <div>
-                  <span className="text-[10px] text-slate-500 block">SatQuery AI</span>
-                  <span className="text-emerald-400 font-bold text-sm">{c.satqueryScore}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-500 block">Generic VLM</span>
-                  <span className="text-slate-400 font-medium">{c.baselineScore}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-emerald-500 block">Advantage</span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">
-                    {c.delta}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Filterable Benchmark Results Table */}
-      <div className="glass-panel rounded-2xl p-6 border border-slate-800 bg-slate-900/60 shadow-xl space-y-4">
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-          <h3 className="text-sm font-bold font-mono text-slate-200 uppercase tracking-wider">
-            EVALUATION LOG MATRIX
-          </h3>
-
-          <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
-            <span className="text-slate-500 px-2 flex items-center gap-1">
-              <Filter className="w-3 h-3" />
-              Filter:
-            </span>
-            {['all', 'vqa', 'grounding', 'change', 'optical'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFilterCategory(cat)}
-                className={`px-2.5 py-1 rounded-lg uppercase text-[10px] transition-all ${
-                  filterCategory === cat
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+      {/* Verified Benchmark Results Section */}
+      <div className="glass-panel rounded-2xl p-6 border border-slate-800 bg-slate-900/50 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-sm font-bold font-mono text-slate-100 uppercase tracking-wider flex items-center gap-2">
+              <Database className="w-4 h-4 text-cyan-400" />
+              Verified Public Benchmark Results
+            </h3>
+            <p className="text-xs text-slate-400 font-mono">
+              Results populated strictly from persisted execution artifacts. Zero fabricated scores.
+            </p>
           </div>
+
+          {results.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800 text-xs font-mono">
+              <span className="text-slate-500 px-2 flex items-center gap-1">
+                <Filter className="w-3 h-3" />
+                Filter:
+              </span>
+              {['all', 'vqa', 'grounding', 'change', 'fusion'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setFilterCategory(cat)}
+                  className={`px-2.5 py-1 rounded-lg uppercase text-[10px] transition-all ${
+                    filterCategory === cat
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs font-mono">
-            <thead>
-              <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 uppercase text-[10px]">
-                <th className="p-3">Benchmark Dataset</th>
-                <th className="p-3">Task Category</th>
-                <th className="p-3">Specialist Model Adapter</th>
-                <th className="p-3">Target Metric</th>
-                <th className="p-3">Evaluated Score</th>
-                <th className="p-3">Evaluation Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-200">
-              {filteredResults.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-950/50 transition-colors">
-                  <td className="p-3 font-semibold text-cyan-300">{row.dataset}</td>
-                  <td className="p-3">{row.task}</td>
-                  <td className="p-3 font-mono text-slate-400">{row.model}</td>
-                  <td className="p-3 text-slate-400">{row.metric}</td>
-                  <td className="p-3 font-bold text-emerald-400">{row.score}</td>
-                  <td className="p-3 text-slate-500">{row.date}</td>
+        {/* Dynamic Display: Table or Honest "NO VERIFIED BENCHMARK RESULTS" */}
+        {isLoading ? (
+          <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-400 font-mono text-xs">
+            <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+            Checking persisted benchmark artifacts...
+          </div>
+        ) : results.length === 0 ? (
+          <div className="py-12 px-6 rounded-xl border border-dashed border-slate-800 bg-slate-950/40 text-center space-y-3">
+            <div className="inline-flex p-3 rounded-2xl bg-cyan-950/50 border border-cyan-800/40 text-cyan-400">
+              <Info className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold font-mono text-slate-200 uppercase tracking-wider">
+              NO VERIFIED BENCHMARK RESULTS
+            </h4>
+            <p className="text-xs text-slate-400 max-w-lg mx-auto leading-relaxed font-sans">
+              Benchmark results will appear after actual evaluation on mounted datasets (RSVQA, VRSBench, CDVQA). 
+              In compliance with scientific integrity rules, SatQuery AI never displays unverified or hardcoded percentages.
+            </p>
+            <p className="text-[11px] text-cyan-400/80 font-mono">
+              Run the evaluation pipeline with mounted data splits to populate this panel.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs font-mono">
+              <thead>
+                <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 uppercase text-[10px]">
+                  <th className="p-3">Benchmark Dataset</th>
+                  <th className="p-3">Task Category</th>
+                  <th className="p-3">Specialist Model Adapter</th>
+                  <th className="p-3">Target Metric</th>
+                  <th className="p-3">Evaluated Score</th>
+                  <th className="p-3">Evaluation Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                {filteredResults.map((row, idx) => (
+                  <tr key={idx} className="hover:bg-slate-950/50 transition-colors">
+                    <td className="p-3 font-semibold text-cyan-300">{row.dataset}</td>
+                    <td className="p-3">{row.task}</td>
+                    <td className="p-3 font-mono text-slate-400">{row.model}</td>
+                    <td className="p-3 text-slate-400">{row.metric}</td>
+                    <td className="p-3 font-bold text-emerald-400">{row.score}</td>
+                    <td className="p-3 text-slate-500">{row.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
       </div>
 
-      {/* ISRO / SAC Evaluation Readiness Portal (Section 46) */}
-      <div className="glass-panel rounded-2xl p-6 border border-cyan-500/30 bg-slate-900/70 shadow-2xl space-y-4">
+      {/* Local Synthetic Pipeline Validation (Section 4 & 28) */}
+      <div className="glass-panel rounded-2xl p-6 border border-slate-800 bg-slate-900/60 shadow-xl space-y-4">
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
           <div className="flex items-center gap-2.5">
@@ -207,14 +152,14 @@ export const BenchmarksPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-bold font-mono text-slate-100 uppercase tracking-wider">
-                  ISRO / SAC CO-REGISTERED BENCHMARK TEST SUITE
+                  LOCAL SYNTHETIC PIPELINE VALIDATION
                 </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase">
-                  Section 46 Readiness
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 uppercase">
+                  Synthetic Math Verification
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-mono">
-                Cartosat-2S (0.6m Optical) + RISAT-1A (C-Band SAR) Co-Registered Spatial Evaluation
+                Verifies spatial array arithmetic, mask IoU, bounding box overlap, and cross-modal NCC on deterministic test rasters.
               </p>
             </div>
           </div>
@@ -222,85 +167,119 @@ export const BenchmarksPage: React.FC = () => {
           <button
             onClick={async () => {
               try {
-                setIsRunningIsroTest(true);
-                const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-                const res = await fetch(`${API_BASE}/evaluation/isro-run`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({}),
-                });
-                if (!res.ok) throw new Error('ISRO test run failed');
-                const data = await res.json();
-                setIsroTestMetrics(data);
+                setIsRunningSynthetic(true);
+                const data = await runSyntheticValidation(42);
+                setSyntheticMetrics(data);
               } catch (err) {
-                console.error('ISRO test error:', err);
+                console.error('Synthetic validation error:', err);
               } finally {
-                setIsRunningIsroTest(false);
+                setIsRunningSynthetic(false);
               }
             }}
-            disabled={isRunningIsroTest}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-cyan-600 via-teal-600 to-sky-500 hover:from-cyan-500 hover:to-sky-400 text-slate-950 shadow-md shadow-cyan-900/30 transition-all disabled:opacity-50"
+            disabled={isRunningSynthetic}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-bold bg-cyan-600 hover:bg-cyan-500 text-slate-950 shadow-md shadow-cyan-950 transition-all disabled:opacity-50"
           >
-            {isRunningIsroTest ? (
+            {isRunningSynthetic ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-                Executing Test Suite...
+                Computing Pipeline Math...
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 fill-slate-950" />
-                Run Live ISRO Evaluation
+                Run Synthetic Pipeline Validation
               </>
             )}
           </button>
         </div>
 
-        {/* Live Metrics Display */}
-        {isroTestMetrics ? (
+        {/* Synthetic Results Display */}
+        {syntheticMetrics && (
           <div className="space-y-4 pt-1 font-mono text-xs animate-in fade-in duration-300">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-500 block uppercase">SPATIAL NCC CORRELATION</span>
-                <span className="text-lg font-bold text-cyan-300">
-                  {isroTestMetrics.evaluation_metrics.spatial_ncc_correlation}
-                </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Cross-modal spatial alignment</span>
-              </div>
-
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-500 block uppercase">MASK INTERSECTION OVER UNION</span>
-                <span className="text-lg font-bold text-teal-300">
-                  {isroTestMetrics.evaluation_metrics.mask_iou}
-                </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Pixel segmentation overlap</span>
-              </div>
-
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-500 block uppercase">BOUNDING BOX MEAN IOU</span>
-                <span className="text-lg font-bold text-emerald-400">
-                  {isroTestMetrics.evaluation_metrics.bounding_box_mean_iou}
-                </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Target localization accuracy</span>
+            <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-800/40 text-amber-300 flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="font-bold uppercase text-[10px]">Disclaimer</p>
+                <p className="text-[11px] leading-relaxed opacity-90">{syntheticMetrics.disclaimer}</p>
               </div>
             </div>
 
-            <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center justify-between">
-              <div>
-                <span className="text-cyan-400 font-bold mr-2">Sensor Pair:</span>
-                <span>{isroTestMetrics.sample_pair_metadata.optical_sensor} & {isroTestMetrics.sample_pair_metadata.sar_sensor}</span>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-500 uppercase">Cross-Modal NCC</span>
+                <p className="text-lg font-bold text-cyan-300">
+                  {syntheticMetrics.metrics?.spatial_ncc_correlation ?? 'N/A'}
+                </p>
+                <p className="text-[9px] text-slate-500">Normalized Correlation</p>
               </div>
-              <div>
-                <span className="text-slate-500 mr-1">Projection:</span>
-                <span className="text-slate-200 font-bold">{isroTestMetrics.sample_pair_metadata.projection}</span>
+
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-500 uppercase">Binary Mask IoU</span>
+                <p className="text-lg font-bold text-teal-300">
+                  {syntheticMetrics.metrics?.mask_iou ?? 'N/A'}
+                </p>
+                <p className="text-[9px] text-slate-500">Overlap Ratio</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-500 uppercase">Mask F1-Score</span>
+                <p className="text-lg font-bold text-emerald-300">
+                  {syntheticMetrics.metrics?.mask_f1_score ?? 'N/A'}
+                </p>
+                <p className="text-[9px] text-slate-500">Dice Coefficient</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-500 uppercase">Bounding Box Mean IoU</span>
+                <p className="text-lg font-bold text-sky-300">
+                  {syntheticMetrics.metrics?.bounding_box_mean_iou ?? 'N/A'}
+                </p>
+                <p className="text-[9px] text-slate-500">Spatial Overlap</p>
               </div>
             </div>
           </div>
-        ) : (
-          <p className="text-xs text-slate-400 font-mono">
-            Click "Run Live ISRO Evaluation" to compute spatial correlation, bounding box overlap, and pixel mask IoU against the Cartosat-2S + RISAT-1A co-registered suite.
-          </p>
         )}
 
+      </div>
+
+      {/* Official ISRO / SAC Evaluation Workflow (Requirement 28) */}
+      <div className="glass-panel rounded-2xl p-6 border border-slate-800 bg-slate-900/40 space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h4 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <Award className="w-4 h-4 text-emerald-400" />
+              Official ISRO / SAC Evaluation Workflow
+            </h4>
+            <p className="text-[11px] text-slate-400">
+              Dedicated channel for authorized Cartosat-2S and RISAT-1A evaluation suites when official ground truth packages are mounted.
+            </p>
+          </div>
+
+          <button
+            onClick={async () => {
+              try {
+                setIsRunningOfficial(true);
+                const data = await runOfficialEvaluation();
+                setOfficialStatus(data);
+              } catch (err) {
+                console.error('Official evaluation error:', err);
+              } finally {
+                setIsRunningOfficial(false);
+              }
+            }}
+            disabled={isRunningOfficial}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-mono font-medium border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all"
+          >
+            {isRunningOfficial ? 'Checking Status...' : 'Check Official Evaluation Dataset'}
+          </button>
+        </div>
+
+        {officialStatus && (
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300">
+            <span className="text-cyan-400 font-bold uppercase">Status: {officialStatus.status}</span>
+            <p className="mt-1 text-slate-400">{officialStatus.message}</p>
+          </div>
+        )}
       </div>
 
     </div>

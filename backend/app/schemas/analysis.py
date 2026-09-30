@@ -44,6 +44,19 @@ class ExecutionTraceSchema(BaseModel):
     parameters: Dict[str, Any]
     execution_time_ms: float
 
+class ConfidenceBreakdownSchema(BaseModel):
+    model_confidence: Optional[float] = Field(default=None, description="Direct model prediction confidence / logit probability")
+    evidence_confidence: Optional[float] = Field(default=None, description="Confidence derived from observational data completeness")
+    system_confidence: Optional[float] = Field(default=None, description="Overall calibrated system confidence score")
+    evidence_quality: Dict[str, Any] = Field(default_factory=dict, description="Diagnostic evidence quality indicators")
+
+class ConflictInfoSchema(BaseModel):
+    conflict_detected: bool = Field(default=False, description="Whether cross-evidence contradiction was detected")
+    conflict_type: Optional[str] = Field(default=None, description="Type identifier of the detected contradiction")
+    conflict_details: Optional[str] = Field(default=None, description="Explanation of contradictory observations")
+    reanalysis_performed: bool = Field(default=False, description="Whether targeted reanalysis was triggered and completed")
+    reanalysis_tool: Optional[str] = Field(default=None, description="Identifier of the fallback or specialized reanalysis tool")
+
 class AnalysisResponseSchema(BaseModel):
     id: str
     task: str
@@ -53,9 +66,16 @@ class AnalysisResponseSchema(BaseModel):
     confidence_label: str
     models: List[str]
     implementation_status: str = Field(default="baseline", description="Status: baseline, pretrained_model, demo, etc.")
+    primary_model: Optional[str] = Field(default=None, description="Primary intended specialist model")
+    actual_model_used: Optional[str] = Field(default=None, description="Model or baseline that generated the inference")
+    fallback_used: bool = Field(default=False, description="Whether fallback model was activated due to unavailable weights")
+    model_status: Optional[str] = Field(default=None, description="Model status: loaded, checkpoint_not_found, baseline, etc.")
+    model_provenance: Optional[Dict[str, Any]] = Field(default=None, description="Detailed model provenance metadata")
     evidence: List[VisualEvidenceSchema]
     trace: ExecutionTraceSchema
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    confidence_breakdown: Optional[ConfidenceBreakdownSchema] = None
+    conflict_info: Optional[ConflictInfoSchema] = None
     execution_time_ms: float
     created_at: str
 

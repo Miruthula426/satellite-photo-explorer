@@ -1,12 +1,12 @@
 import logging
 from typing import Dict, Any, Optional, List
 from app.models.base import BaseModel
-from app.models.vqa.vqa_model import GenericVLMSynthesisAdapter
+from app.models.vqa.vqa_model import GenericVLMOrchestrator
 from app.models.captioning.captioner import ClassicalSpectralCaptioner
-from app.models.grounding.grounder import ClassicalBaselineGrounder
-from app.models.change_detection.change_detector import PixelDifferenceChangeBaseline
+from app.models.grounding.grounder import GroundingProvider, ClassicalBaselineGrounder
+from app.models.change_detection.change_detector import ChangeDetectionProvider
 from app.models.change_vqa.change_vqa import ChangeVQA
-from app.models.optical_sar.optical_sar_fusion import OpticalSARVisualizationBaseline
+from app.models.optical_sar.optical_sar_fusion import OpticalSARJointAnalysisProvider
 
 logger = logging.getLogger("satquery.registry")
 
@@ -18,20 +18,20 @@ class ModelRegistry:
 
     def _init_registry(self):
         """
-        Registers remote sensing models and explicit baseline adapters.
+        Registers remote sensing models, providers, and explicit baseline adapters.
         Honest declarations: un-trained heuristics are designated as 'baseline'.
         """
         # 1. VQA
         self.register(
             "vqa", 
-            GenericVLMSynthesisAdapter(),
+            GenericVLMOrchestrator(),
             metadata={
-                "implementation": "GenericVLMSynthesisAdapter (Gemini API / Local Spectral Baseline)",
-                "model_source": "google/gemini-2.5-flash + local heuristics",
+                "implementation": "GenericVLMOrchestrator (Florence-2-base / Gemini API / Spectral Baseline)",
+                "model_source": "Multi-Provider (microsoft/Florence-2-base / gemini-2.5-flash / local heuristics)",
                 "modality": "OPTICAL / MULTISPECTRAL",
                 "input_requirements": "Single satellite raster (1+ bands)",
-                "device_requirements": "CPU / Network API",
-                "license": "Apache-2.0"
+                "device_requirements": "CPU / Network API / GPU (optional)",
+                "license": "MIT / Apache-2.0"
             }
         )
 
@@ -52,13 +52,13 @@ class ModelRegistry:
         # 3. Grounding
         self.register(
             "grounding", 
-            ClassicalBaselineGrounder(),
+            GroundingProvider(),
             metadata={
-                "implementation": "ClassicalBaselineGrounder (Spectral thresholding + contours)",
-                "model_source": "OpenCV / SciPy connected components",
+                "implementation": "GroundingProvider (OWL-ViT Open-Vocabulary Grounder / Classical Baseline fallback)",
+                "model_source": "google/owlvit-base-patch32 + OpenCV/SciPy contouring baseline",
                 "modality": "OPTICAL / MULTISPECTRAL",
                 "input_requirements": "Single satellite raster + target query string",
-                "device_requirements": "CPU",
+                "device_requirements": "CPU / GPU",
                 "license": "Apache-2.0"
             }
         )
@@ -66,14 +66,14 @@ class ModelRegistry:
         # 4. Change Detection
         self.register(
             "change_detection", 
-            PixelDifferenceChangeBaseline(),
+            ChangeDetectionProvider(),
             metadata={
-                "implementation": "PixelDifferenceChangeBaseline (Spectral difference magnitude)",
-                "model_source": "NumPy / Rasterio co-registration baseline",
+                "implementation": "ChangeDetectionProvider (BIT-CD Transformer / PixelDifferenceChangeBaseline fallback)",
+                "model_source": "Bitemporal Image Transformer (BIT-CD) + Rasterio differencing baseline",
                 "modality": "BI-TEMPORAL OPTICAL / SAR",
                 "input_requirements": "2 co-registered or rescaled rasters (T1 & T2)",
-                "device_requirements": "CPU",
-                "license": "Apache-2.0"
+                "device_requirements": "CPU / GPU",
+                "license": "MIT / Apache-2.0"
             }
         )
 
@@ -94,10 +94,10 @@ class ModelRegistry:
         # 6. Optical + SAR
         self.register(
             "optical_sar", 
-            OpticalSARVisualizationBaseline(),
+            OpticalSARJointAnalysisProvider(),
             metadata={
-                "implementation": "OpticalSARVisualizationBaseline (Linear composite & backscatter slicing)",
-                "model_source": "Radiometric thresholding baseline",
+                "implementation": "OpticalSARJointAnalysisProvider (Calibrated dB Scaling & Cross-Modal Composite)",
+                "model_source": "Radiometric cross-modal joint analysis",
                 "modality": "OPTICAL + SAR DUAL MODALITY",
                 "input_requirements": "2 rasters (Optical reflectance + SAR backscatter)",
                 "device_requirements": "CPU",

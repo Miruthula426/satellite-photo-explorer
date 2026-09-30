@@ -113,3 +113,34 @@ export async function runOfficialEvaluation(): Promise<any> {
   if (!res.ok) throw new Error('Official evaluation call failed');
   return await res.json();
 }
+
+export async function sendChatMessage(payload: import('../types').ChatRequestPayload): Promise<import('../types').ChatResponsePayload> {
+  const res = await fetch(`${API_BASE}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(errorData.detail || `Chat request failed (${res.status})`);
+  }
+
+  return await res.json();
+}
+
+export async function checkChatHealth(): Promise<import('../types').ChatHealthResponse> {
+  try {
+    const res = await fetch(`${API_BASE}/chat/health`);
+    if (!res.ok) throw new Error('Chat health check failed');
+    return await res.json();
+  } catch (err) {
+    return {
+      status: 'offline',
+      available: false,
+      provider: 'LM Studio',
+      base_url: 'http://127.0.0.1:1234/v1',
+      configured_model: 'unavailable'
+    };
+  }
+}

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "npx vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/tests/*.test.ts"
   },
   "dependencies": {
     "lucide-react": "^0.546.0",

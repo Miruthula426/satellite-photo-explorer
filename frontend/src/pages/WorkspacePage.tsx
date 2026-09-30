@@ -109,6 +109,7 @@ export const WorkspacePage: React.FC = () => {
             isLoading={isLoading}
             mode={mode}
             presetQueries={sampleQueries}
+            analysisResponse={response}
           />
         </div>
       </div>

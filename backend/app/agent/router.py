@@ -83,13 +83,13 @@ class IntentClassifier:
             )
 
         # Single image tasks
-        if any(w in q for w in ["highlight", "detect", "ground", "find", "locate", "outline", "mask", "box", "segment"]):
+        if any(w in q for w in ["highlight", "detect", "ground", "find", "locate", "outline", "mask", "box", "segment", "where is", "where are", "show me", "show", "pinpoint", "bounding box"]):
             return RoutingDecision(
                 task="grounding",
                 reason="Single scene provided with spatial feature localization/grounding prompt.",
                 required_modalities=["OPTICAL"],
                 required_image_count=1,
-                selected_models=["ClassicalBaselineGrounder"],
+                selected_models=["GroundingProvider", "google/owlvit-base-patch32", "ClassicalBaselineGrounder"],
                 classifier_type="rule_based"
             )
         if any(w in q for w in ["describe", "caption", "summary", "overview", "report"]):
